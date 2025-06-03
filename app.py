@@ -7,34 +7,34 @@ import time
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
-# GitHub AI configuration
-GITHUB_TOKEN = os.getenv('GITHUB_TOKEN', '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')
-MODEL_ENDPOINT = 'https://models.github.ai/inference'
-MODEL_NAME = 'openai/gpt-4.1'
+# DeepInfra configuration
+DEEPINFRA_TOKEN = os.getenv('DEEPINFRA_TOKEN', '0Jf3I1q8DvYK5ko2jVltaCK7wcfGTR7h')
+MODEL_ENDPOINT = 'https://api.deepinfra.com/v1/openai/chat/completions'
+MODEL_NAME = 'meta-llama/Llama-2-70b-chat-hf'  # You can change this to any model supported by DeepInfra
 
 def generate_content(prompt, max_retries=3):
     headers = {
-        'Authorization': f'Bearer {GITHUB_TOKEN}',
+        'Authorization': f'Bearer {DEEPINFRA_TOKEN}',
         'Content-Type': 'application/json'
     }
 
     data = {
+        'model': MODEL_NAME,
         'messages': [
             {'role': 'system', 'content': 'You are an expert teacher who explains concepts clearly and engagingly. Provide detailed explanations with examples when teaching.'},
             {'role': 'user', 'content': prompt}
         ],
         'temperature': 0.7,
-        'top_p': 1.0,
-        'model': MODEL_NAME
+        'max_tokens': 2000
     }
 
     for attempt in range(max_retries):
         try:
             response = requests.post(
-                f'{MODEL_ENDPOINT}/chat/completions',
+                MODEL_ENDPOINT,
                 headers=headers,
                 json=data,
-                timeout=20
+                timeout=30
             )
             
             if response.status_code == 429:
@@ -45,7 +45,7 @@ def generate_content(prompt, max_retries=3):
                 raise Exception("API rate limit exceeded. Please try again later.")
                 
             if response.status_code == 401:
-                raise Exception("Unauthorized - check your GitHub token permissions.")
+                raise Exception("Unauthorized - check your DeepInfra token permissions.")
                 
             if response.status_code == 403:
                 raise Exception("Forbidden - you may need to upgrade your access.")
